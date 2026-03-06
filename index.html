@@ -48,8 +48,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 // 창고 이름을 'default'로 시도하고, 없으면 기본창고를 쓰도록 바꿉니다.
 let db;
-try {db = firebase.app().firestore('default');} 
-catch (e) {db = firebase.firestore();}
+const db = firebase.firestore();
 const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
 
@@ -184,4 +183,5 @@ dataRef.collection('jobs').onSnapshot(snap => {
 </body>
 
 </html>
+
 
