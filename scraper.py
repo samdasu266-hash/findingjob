@@ -15,7 +15,8 @@ if not firebase_json:
 cred = credentials.Certificate(json.loads(firebase_json))
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
-db = firestore.client()
+# (default) 데이터베이스를 명시적으로 지정합니다.
+db = firestore.client(database_id="(default)")
 APP_ID = "recruitment-portal-v3"
 
 async def scrape_site(browser, inst_id, url):
@@ -122,3 +123,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
