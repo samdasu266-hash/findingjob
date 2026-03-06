@@ -49,9 +49,9 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// 중복 선언(let db)을 지우고 하나로 합칩니다. 
-// 대부분의 경우 firestore()만 적으면 자동으로 기본 창고에 연결됩니다.
-const db = firebase.firestore(); 
+// 🔥 [중요] 'default' 창고 주소를 정확히 찍어줍니다.
+// 변수 이름을 'const db' 하나로 통일하여 중복 선언 에러를 방지합니다.
+const db = firebase.app().firestore('default'); 
 const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
 
@@ -186,6 +186,7 @@ dataRef.collection('jobs').onSnapshot(snap => {
 </body>
 
 </html>
+
 
 
 
