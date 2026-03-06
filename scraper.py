@@ -18,7 +18,8 @@ if not firebase_admin._apps:
 # (default) 데이터베이스를 명시적으로 지정합니다.
 # 괄호와 이름을 빼고 가장 기본형으로 바꿉니다. 
 # 이렇게 하면 구글이 알아서 프로젝트의 메인 창고를 찾아갑니다.
-db = firestore.client()
+# 괄호 없는 'default'라는 이름을 명시적으로 지정합니다.
+db = firestore.client(database_id='default')
 APP_ID = "recruitment-portal-v3"
 
 async def scrape_site(browser, inst_id, url):
@@ -125,5 +126,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
