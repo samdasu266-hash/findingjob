@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>보건직 및 간호사 공기업/공단 채용공고 모음집</title>
+    <!-- 외부 라이브러리 불러오기 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+
+    <!-- Firebase 라이브러리 (필수) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // 아이콘 컴포넌트
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            useEffect(() => { if (window.lucide) lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUBJ3oGSEbhEKHLP04OuUUXkiZNpv6vXE",
+  authDomain: "get-out-from-hospital.firebaseapp.com",
+  projectId: "get-out-from-hospital",
+  storageBucket: "get-out-from-hospital.firebasestorage.app",
+  messagingSenderId: "18005175262",
+  appId: "1:18005175262:web:ae31eedd60bb90d438cb4f",
+  measurementId: "G-2Y8EY9552N"
+};
+
+        // 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const APP_ID = "recruitment-portal-v3";
+
+        const App = () => {
+            const [jobs, setJobs] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [activeTab, setActiveTab] = useState('all');
+            const [lastSync, setLastSync] = useState("");
+            const [showSpecInfo, setShowSpecInfo] = useState(null);
+
+            const institutions = [
+                { id: 'nhis', name: '국민건강보험공단', shortName: '건보공단', url: 'https://nhis.kpcice.kr', specs: { language: '토익 700점대', cert: '사복 1급, 컴활', license: '간호사/영양사 면허', summary: 'NCS 변별력이 매우 큼' } },
+                { id: 'hira', name: '건강보험심사평가원', shortName: '심평원', url: 'https://hira.recruitlab.co.kr', specs: { language: '토익 700점 이상', cert: '컴활 1급, 한국사 1급', license: '간호사/의료기사 면허', summary: '서류 자격증 가점이 매우 중요함' } },
+                { id: 'neca', name: '한국보건의료연구원', shortName: '보의연', url: 'https://neca.applyin.co.kr', specs: { language: '토익 850점 이상', cert: '데이터 분석 자격', license: '석사 학위 이상', summary: '연구 역량이 매우 중요함' } },
+                { id: 'kuksiwon', name: '한국보건의료인국가시험원', shortName: '국시원', url: 'https://dware.intojob.co.kr', specs: { language: '토익 750점 이상', cert: '정보처리기사', license: '행정직 무관', summary: '시험 관리 행정 역량 중시' } },
+                { id: 'koiha', name: '의료기관평가인증원', shortName: '인증원', url: 'https://koiha.recruiter.co.kr', specs: { language: '영어 성적 필수', cert: '보건교육사 우대', license: '의료인 면허 우대', summary: '평가 실무 경력이 중요함' } },
+            ];
+
+            useEffect(() => {
+                // 익명 로그인 후 데이터 실시간 리스너 연결
+                auth.signInAnonymously().then(() => {
+                    const dataRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data');
+                    
+                    // 공고 데이터 리스너
+                    dataRef.collection('jobs').onSnapshot(snap => {
+                        const list = [];
+                        snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                        // 최신 게시일 순 정렬
+                        list.sort((a, b) => new Date(b.postedDate || 0) - new Date(a.postedDate || 0));
+                        setJobs(list);
+                        setLoading(false);
+                    });
+
+                    // 동기화 시각 리스너
+                    dataRef.collection('metadata').doc('sync').onSnapshot(doc => {
+                        if(doc.exists && doc.data().lastSync) {
+                            setLastSync(new Date(doc.data().lastSync).toLocaleString());
+                        }
+                    });
+                });
+            }, []);
+
+            const filteredJobs = useMemo(() => {
+                return jobs.filter(job => 
+                    (job.title?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+                    (activeTab === 'all' || job.instId === activeTab)
+                );
+            }, [jobs, searchTerm, activeTab]);
+
+            return (
+                <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <header className="mb-10 space-y-4">
+                            <div className="flex gap-2">
+                                <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter">Live Updates</span>
+                                <span className="bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded-full text-[10px] font-bold">수집 시각: {lastSync || '확인 중...'}</span>
+                            </div>
+                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
+                                보건직 및 간호사<br/>
+                                <span className="text-blue-600">공기업/공단 채용공고</span> 모음집
+                            </h1>
+                        </header>
+
+                        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-8 space-y-6">
+                            <div className="relative">
+                                <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                <input 
+                                    type="text" 
+                                    placeholder="공고 제목으로 검색..." 
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="w-full pl-12 pr-6 py-3.5 bg-slate-50 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" 
+                                />
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-left">
+                                <button onClick={() => setActiveTab('all')} className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>전체보기</button>
+                                {institutions.map(inst => (
+                                    <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-200'}`}>{inst.shortName}</button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            {loading ? (
+                                <div className="py-20 text-center font-bold text-slate-300 animate-pulse">데이터 로드 중...</div>
+                            ) : filteredJobs.length > 0 ? (
+                                filteredJobs.map(job => {
+                                    const inst = institutions.find(i => i.id === job.instId);
+                                    return (
+                                        <div key={job.id} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 hover:border-blue-400 hover:shadow-xl transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-left">
+                                            <div className="space-y-3 flex-1">
+                                                <div className="flex gap-2">
+                                                    <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{inst?.name}</span>
+                                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 rounded uppercase">{job.type}</span>
+                                                </div>
+                                                <h3 className="text-xl font-bold text-slate-800 leading-snug">{job.title}</h3>
+                                                <div className="flex gap-4 text-xs font-bold text-slate-400">
+                                                    <span>게시일: {job.postedDate}</span>
+                                                    {job.endDate && <span className="text-orange-500 uppercase">{job.endDate} 마감</span>}
+                                                </div>
+                                            </div>
+                                            <button onClick={() => window.open(job.link || inst?.url, '_blank')} className="w-full md:w-auto px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-blue-600 transition-colors">지원하기</button>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="py-24 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+                                    <Icon name="file-text" className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                    <p className="text-slate-500 text-sm font-medium">등록된 채용 공고가 없습니다.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
