@@ -14,12 +14,15 @@ if not firebase_json:
 
 cred = credentials.Certificate(json.loads(firebase_json))
 if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
+    # 'projectId'를 직접 적어줘서 로봇이 엉뚱한 곳으로 가지 못하게 못박았습니다.
+    firebase_admin.initialize_app(cred, {
+        'projectId': 'get-out-from-hospital'
+    })
 # (default) 데이터베이스를 명시적으로 지정합니다.
 # 괄호와 이름을 빼고 가장 기본형으로 바꿉니다. 
 # 이렇게 하면 구글이 알아서 프로젝트의 메인 창고를 찾아갑니다.
 # 괄호 없는 'default'라는 이름을 명시적으로 지정합니다.
-db = firestore.client(database_id='default')
+db = firestore.client(database='default')
 APP_ID = "recruitment-portal-v3"
 
 async def scrape_site(browser, inst_id, url):
@@ -126,6 +129,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
