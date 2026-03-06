@@ -49,8 +49,7 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// 🔥 [중요] 'default' 창고 주소를 정확히 찍어줍니다.
-// 변수 이름을 'const db' 하나로 통일하여 중복 선언 에러를 방지합니다.
+// 🔥 [해결] 중복된 let db;를 삭제하고 'const db' 하나로 통일합니다.
 const db = firebase.app().firestore('default'); 
 const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
@@ -186,6 +185,7 @@ dataRef.collection('jobs').onSnapshot(snap => {
 </body>
 
 </html>
+
 
 
 
