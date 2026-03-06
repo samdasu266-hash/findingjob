@@ -45,8 +45,11 @@ const firebaseConfig = {
 };
 
 
-if (!firebase.apps.length) {firebase.initializeApp(firebaseConfig);}
-        const db = firebase.app().firestore('default'); 
+
+        if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.app().firestore('default'); 
 const auth = firebase.auth();
         const APP_ID = "recruitment-portal-v3";
 
@@ -104,13 +107,13 @@ dataRef.collection('jobs').onSnapshot(snap => {
             }, [jobs, searchTerm, activeTab]);
 
 return (
-                <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-                    <div className="max-w-6xl mx-auto text-left">
+                <div className="min-h-screen bg-slate-50 p-4 md:p-8 text-left">
+                    <div className="max-w-6xl mx-auto">
                         {/* 1. 상단 헤더 */}
                         <header className="mb-10 space-y-4">
                             <div className="flex gap-2">
                                 <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter">Live Updates</span>
-                                <span className="bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded-full text-[10px] font-bold tracking-tight">수집 시각: {lastSync || '확인 중...'}</span>
+                                <span className="bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded-full text-[10px] font-bold">수집 시각: {lastSync || '확인 중...'}</span>
                             </div>
                             <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
                                 보건직 및 간호사<br/>
@@ -118,10 +121,17 @@ return (
                             </h1>
                         </header>
 
-                        {/* 2. 2단 레이아웃 (사이드바 + 메인) */}
+                        {/* 2. 에러 알림창 */}
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 p-4 rounded-2xl mb-6 text-red-600 text-sm font-bold">
+                                ⚠️ {error}
+                            </div>
+                        )}
+
+                        {/* 3. 2단 레이아웃 시작 */}
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                             
-                            {/* 👈 왼쪽 사이드바 (기관 정보) */}
+                            {/* 👈 왼쪽 사이드바 (기관 스펙 및 바로가기) */}
                             <aside className="lg:col-span-1 space-y-6">
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                                     <h2 className="text-xs font-black text-slate-400 uppercase mb-6 tracking-widest">수집 대상 기관</h2>
@@ -130,12 +140,14 @@ return (
                                             <div key={inst.id} className="space-y-2">
                                                 <div className="flex items-center justify-between text-sm font-bold text-slate-700">
                                                     {inst.name}
-                                                    <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-300 hover:text-blue-600"><Icon name="external-link" className="w-3 h-3" /></button>
+                                                    <button onClick={() => window.open(inst.url, '_blank')} className="text-slate-300 hover:text-blue-600 transition-colors">
+                                                        <Icon name="external-link" className="w-3 h-3" />
+                                                    </button>
                                                 </div>
                                                 <div className="p-3 bg-slate-50 rounded-xl">
-                                                    <p className="text-[10px] font-black text-slate-400 mb-1 uppercase">합격 전략</p>
+                                                    <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-tighter">합격 전략</p>
                                                     <p className="text-[11px] text-slate-600 leading-relaxed font-medium">{inst.specs.summary}</p>
-                                                    <button onClick={() => setShowSpecInfo(inst)} className="text-[10px] text-blue-600 font-bold mt-2 hover:underline">상세 정보</button>
+                                                    <button onClick={() => setShowSpecInfo(inst)} className="text-[10px] text-blue-600 font-bold mt-2 hover:underline">상세 스펙 보기</button>
                                                 </div>
                                             </div>
                                         ))}
@@ -145,40 +157,41 @@ return (
 
                             {/* 👉 오른쪽 메인 (검색창 + 공고 목록) */}
                             <main className="lg:col-span-3 space-y-6">
-                                {error && (
-                                    <div className="bg-red-50 border border-red-200 p-4 rounded-2xl mb-6 text-red-600 text-sm font-bold">⚠️ {error}</div>
-                                )}
-                                
-                                {/* 검색 및 필터 */}
-                                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 space-y-6">
+                                {/* 검색바 */}
+                                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-8 space-y-6">
                                     <div className="relative">
                                         <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                                        <input type="text" placeholder="공고 제목 검색..." onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-6 py-3.5 bg-slate-50 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="공고 제목으로 검색..." 
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                            className="w-full pl-12 pr-6 py-3.5 bg-slate-50 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" 
+                                        />
                                     </div>
-                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                                        <button onClick={() => setActiveTab('all')} className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>전체보기</button>
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-left">
+                                        <button onClick={() => setActiveTab('all')} className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>전체보기</button>
                                         {institutions.map(inst => (
-                                            <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-500'}`}>{inst.shortName}</button>
+                                            <button key={inst.id} onClick={() => setActiveTab(inst.id)} className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === inst.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-200'}`}>{inst.shortName}</button>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* 공고 목록 */}
+                                {/* 공고 리스트 */}
                                 <div className="space-y-4">
                                     {loading ? (
-                                        <div className="py-20 text-center font-bold text-slate-300 animate-pulse tracking-tight text-lg">데이터베이스에서 공고를 가져오는 중...</div>
+                                        <div className="py-20 text-center font-bold text-slate-300 animate-pulse font-pretendard">데이터 로드 중...</div>
                                     ) : filteredJobs.length > 0 ? (
                                         filteredJobs.map(job => (
-                                            <div key={job.id} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 hover:border-blue-400 hover:shadow-xl transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group text-left">
+                                            <div key={job.id} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 hover:border-blue-400 hover:shadow-xl transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-left">
                                                 <div className="space-y-3 flex-1">
                                                     <div className="flex gap-2">
                                                         <span className="text-[10px] font-black px-2 py-0.5 bg-slate-100 rounded text-slate-500 uppercase">{institutions.find(i => i.id === job.instId)?.shortName}</span>
-                                                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 rounded uppercase">채용공고</span>
+                                                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 rounded uppercase tracking-tighter">채용공고</span>
                                                     </div>
-                                                    <h3 className="text-xl font-bold text-slate-800 leading-snug group-hover:text-blue-700 transition-colors">{job.title}</h3>
+                                                    <h3 className="text-xl font-bold text-slate-800 leading-snug">{job.title}</h3>
                                                     <div className="flex gap-4 text-xs font-bold text-slate-400">
                                                         <span>게시일: {job.postedDate}</span>
-                                                        {job.endDate && <span className="text-orange-500 uppercase">{job.endDate}</span>}
+                                                        {job.endDate && <span className="text-orange-500 uppercase font-black">{job.endDate} 마감</span>}
                                                     </div>
                                                 </div>
                                                 <button onClick={() => window.open(job.link, '_blank')} className="w-full md:w-auto px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">지원하기</button>
@@ -187,17 +200,42 @@ return (
                                     ) : (
                                         <div className="py-24 text-center bg-white rounded-3xl border border-dashed border-slate-300">
                                             <Icon name="file-text" className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                                            <p className="text-slate-500 text-sm font-medium">등록된 채용 공고가 없습니다.</p>
+                                            <p className="text-slate-500 text-sm font-medium tracking-tight">등록된 채용 공고가 없습니다.</p>
                                         </div>
                                     )}
                                 </div>
                             </main>
                         </div>
                     </div>
-                </div>
-            );
 
-            
+                    {/* 상세 스펙 모달 */}
+                    {showSpecInfo && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                            <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative text-left">
+                                <button onClick={() => setShowSpecInfo(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900"><Icon name="x" /></button>
+                                <div className="space-y-6">
+                                    <h2 className="text-2xl font-black text-slate-900">{showSpecInfo.name} 스펙</h2>
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-slate-50 rounded-2xl">
+                                            <p className="text-[10px] font-black text-slate-400 mb-1 uppercase">어학 성적</p>
+                                            <p className="text-sm font-bold text-slate-700">{showSpecInfo.specs.language}</p>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl">
+                                            <p className="text-[10px] font-black text-slate-400 mb-1 uppercase">자격 사항</p>
+                                            <p className="text-sm font-bold text-slate-700">{showSpecInfo.specs.cert}</p>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl">
+                                            <p className="text-[10px] font-black text-slate-400 mb-1 uppercase">면허/학위</p>
+                                            <p className="text-sm font-bold text-slate-700">{showSpecInfo.specs.license}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setShowSpecInfo(null)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold">확인 완료</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );            
             {/* 에러가 있을 때만 빨간 박스를 보여줍니다. */}
 {error && (
     <div className="bg-red-50 border border-red-200 p-4 rounded-2xl mb-6 text-red-600 text-sm font-bold">
@@ -263,10 +301,3 @@ return (
 </body>
 
 </html>
-
-
-
-
-
-
-
